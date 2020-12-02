@@ -1,11 +1,11 @@
 import re
 
 def parse(line):
-    min, max, char, password = re.match(r"(\d+)-(\d+) ([a-z]): ([a-z]+)", line).groups()
-    return int(min), int(max), char, password
+    lo, hi, char, password = re.match(r"(\d+)-(\d+) ([a-z]): ([a-z]+)", line).groups()
+    return int(lo), int(hi), char, password
 
-def validRentalSledPassword(min, max, char, password):
-    return min <= password.count(char) <= max
+def validRentalSledPassword(lo, hi, char, password):
+    return lo <= password.count(char) <= hi
 
 def validOTCAPassword(i, j, char, password):
     return (password[i - 1] == char) != (password[j - 1] == char)
