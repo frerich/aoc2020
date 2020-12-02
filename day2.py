@@ -14,5 +14,5 @@ if __name__ == '__main__':
     with open("day2.input") as f:
         passwords = [parse(line) for line in f]
 
-    print("Part one:", sum(1 for pw in passwords if validRentalSledPassword(*pw)))
-    print("Part one:", sum(1 for pw in passwords if validOTCAPassword(*pw)))
+    print("Part one:", sum(validRentalSledPassword(*pw) for pw in passwords))
+    print("Part two:", sum(validOTCAPassword(*pw) for pw in passwords))
