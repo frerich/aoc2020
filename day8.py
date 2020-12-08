@@ -1,50 +1,59 @@
 import sys
 
 
-def parse(line):
-    cmd, arg = line.split()
-    return cmd, int(arg)
+class Machine:
+    def __init__(self, program):
+        self.program = program
+        self.ip = 0
+        self.acc = 0
 
-
-def execute(program):
-    ip, acc = 0, 0
-    visited = set()
-    while ip < len(program):
-        if ip in visited:
-            return True, acc
-        visited.add(ip)
-
-        cmd, arg = program[ip]
-
+    def step(self):
+        cmd, arg = self.program[self.ip]
+        self.ip += 1
         if cmd == 'nop':
-            ip, acc = ip + 1, acc
+            pass
         elif cmd == 'jmp':
-            ip, acc = ip + arg, acc
+            self.ip += arg - 1
         elif cmd == 'acc':
-            ip, acc = ip + 1, acc + arg
+            self.acc += arg
 
-    return False, acc
+    def done(self):
+        return not 0 <= self.ip < len(self.program)
+
+
+def runUntilLoop(machine):
+    seen = set()
+    while not machine.done() and machine.ip not in seen:
+        seen.add(machine.ip)
+        machine.step()
 
 
 def partOne(program):
-    loops, acc = execute(program)
-    return acc
+    m = Machine(program)
+    runUntilLoop(m)
+    return m.acc
 
 
 def partTwo(program):
     for i, (cmd, arg) in enumerate(program):
         if cmd == 'nop':
-            patched = program.copy()
-            patched[i] = ('jmp', arg)
+            program[i] = ('jmp', arg)
         elif cmd == 'jmp':
-            patched = program.copy()
-            patched[i] = ('nop', arg)
+            program[i] = ('nop', arg)
         else:
             continue
 
-        loops, acc = execute(patched)
-        if not loops:
-            return acc
+        m = Machine(program)
+        runUntilLoop(m)
+        if m.done():
+            return m.acc
+
+        program[i] = (cmd, arg)
+
+
+def parse(line):
+    cmd, arg = line.split()
+    return cmd, int(arg)
 
 
 if __name__ == '__main__':
