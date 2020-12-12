@@ -22,7 +22,6 @@ def simulate(seats, visibleSeats, occupiedRule):
             nextSeats[pos] = occupiedRule(occupied, numOccupiedNeighbors)
 
         if nextSeats == seats:
-            print("simulate: converged after %d rounds" % rounds)
             return sum(occupied for occupied in seats.values())
 
         seats = nextSeats.copy()
