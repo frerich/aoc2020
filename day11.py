@@ -1,7 +1,7 @@
 import sys
 
 
-DIRECTIONS = [(-1,-1), (0,-1), (1,-1), (-1,0), (1,0), (-1,1), (0,1), (1,1)]
+DIRECTIONS = [(-1, -1), (0, -1), (1, -1), (-1, 0), (1, 0), (-1, 1), (0, 1), (1, 1)]
 
 
 def parse(f):
@@ -11,50 +11,57 @@ def parse(f):
                 yield (x, y), False
 
 
-def evolve(seats):
-    for (x, y), occupied in seats.items():
-        neighbors = sum(seats.get((x+dx, y+dy), False) for dx, dy in DIRECTIONS)
-
-        if occupied:
-            stillOccupied = neighbors < 4
-        else:
-            stillOccupied = neighbors == 0
-
-        yield (x, y), stillOccupied
-
-
-def evolve2(seats):
-    for (x, y), occupied in seats.items():
-        neighbors = 0
-
-        for dx, dy in DIRECTIONS:
-            px, py = x + dx, y + dy
-            while 0 <= px < 92 and 0 <= py < 94:
-                seatTaken = seats.get((px, py))
-                if seatTaken is not None:
-                    neighbors += seatTaken
-                    break
-                px += dx
-                py += dy
-
-        if occupied:
-            stillOccupied = neighbors < 5
-        else:
-            stillOccupied = neighbors == 0
-
-        yield (x, y), stillOccupied
-
-
-def simulate(seats, evolveFn):
-    prevSeats = seats
+def simulate(seats, visibleSeats, occupiedRule):
+    nextSeats = dict()
     while True:
-        prevSeats, seats = seats, dict(evolveFn(seats))
-        if seats == prevSeats:
+        for pos, occupied in seats.items():
+            numOccupiedNeighbors = 0
+            for np in visibleSeats[pos]:
+                if seats[np]:
+                    numOccupiedNeighbors += 1
+            nextSeats[pos] = occupiedRule(occupied, numOccupiedNeighbors)
+
+        if nextSeats == seats:
+            print("simulate: converged after %d rounds" % rounds)
             return sum(occupied for occupied in seats.values())
+
+        seats = nextSeats.copy()
+
+
+def partOne(seats):
+    def occupiedRule(currentlyOccupied, neighbors):
+        return neighbors < 4 if currentlyOccupied else neighbors == 0
+
+    visibleSeats = {}
+    for x, y in seats.keys():
+        visibleSeats[(x, y)] = [(x + dx, y + dy) for dx, dy in DIRECTIONS if (x + dx, y + dy) in seats]
+
+    return simulate(seats, visibleSeats, occupiedRule)
+
+
+def partTwo(seats):
+    def occupiedRule(currentlyOccupied, neighbors):
+        return neighbors < 5 if currentlyOccupied else neighbors == 0
+
+    visibleSeats = {}
+    for x, y in seats.keys():
+        neighbors = []
+        for dx, dy in DIRECTIONS:
+            ax, ay = x + dx, y + dy
+            while 0 <= ay < HEIGHT and 0 <= ax < WIDTH:
+                if (ax, ay) in seats:
+                    neighbors.append((ax, ay))
+                    break
+                ax += dx
+                ay += dy
+        visibleSeats[(x, y)] = neighbors
+
+    return simulate(seats, visibleSeats, occupiedRule)
 
 
 if __name__ == '__main__':
-    seats = dict(parse(sys.stdin))
-
-    print("Part one:", simulate(seats, evolve))
-    print("Part two:", simulate(seats, evolve2))
+    WIDTH = 92
+    HEIGHT = 94
+    seatMap = dict(parse(sys.stdin))
+    print("Part one:", partOne(seatMap))
+    print("Part two:", partTwo(seatMap))
