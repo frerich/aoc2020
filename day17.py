@@ -9,13 +9,10 @@ def parse(f):
                 yield x, y
 
 
-def evolve(active, dimensions):
-    bounds = []
-    for dim in range(dimensions):
-        cs = [v[dim] for v in active]
-        bounds.append((min(cs), max(cs)))
-
-    space = product(*[range(bounds[dim][0] - 1, bounds[dim][1] + 2) for dim in range(dimensions)])
+def evolve(active):
+    space = set()
+    for v in active:
+        space.update(product(*[[c - 1, c, c + 1] for c in v]))
 
     for v in space:
         # Hot path: don't use `sum` or generator expressions here
@@ -28,14 +25,14 @@ def evolve(active, dimensions):
             yield v
 
 
-def simulate(active, dimensions, rounds):
+def simulate(active, rounds):
     for _ in range(rounds):
-        active = set(evolve(active, dimensions))
+        active = set(evolve(active))
     return len(active)
 
 
 if __name__ == '__main__':
     initialSlice = set(parse(sys.stdin))
 
-    print("Part one:", simulate(set((x, y, 0) for x, y in initialSlice), 3, 6))
-    print("Part one:", simulate(set((x, y, 0, 0) for x, y in initialSlice), 4, 6))
+    print("Part one:", simulate(set((x, y, 0) for x, y in initialSlice), 6))
+    print("Part one:", simulate(set((x, y, 0, 0) for x, y in initialSlice), 6))
