@@ -35,4 +35,4 @@ if __name__ == '__main__':
     initialSlice = set(parse(sys.stdin))
 
     print("Part one:", simulate(set((x, y, 0) for x, y in initialSlice), 6))
-    print("Part one:", simulate(set((x, y, 0, 0) for x, y in initialSlice), 6))
+    print("Part two:", simulate(set((x, y, 0, 0) for x, y in initialSlice), 6))
