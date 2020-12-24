@@ -2,6 +2,11 @@ from math import sqrt
 import sys
 
 
+SEAMONSTER_TEMPLATE = """\
+                  # 
+#    ##    ##    ###
+ #  #  #  #  #  #   
+"""
 TILE_SIZE = 10
 
 
@@ -21,63 +26,110 @@ def parse(f):
         yield tileId, pixels
 
 
-def rotateLeft(pixels):
-    return {(y, -x + TILE_SIZE - 1) for x, y in pixels}
+def rotateLeft(tile, width=TILE_SIZE):
+    return {(y, -x + width - 1) for x, y in tile}
 
 
-def mirrorVertical(pixels):
-    return {(x, TILE_SIZE - 1 - y) for x, y in pixels}
+def mirrorVertical(tile, height=TILE_SIZE):
+    return {(x, height - 1 - y) for x, y in tile}
 
 
-def mirrorHorizontal(pixels):
-    return {(TILE_SIZE - 1 - x, y) for x, y in pixels}
+def imageVariants(tile, size=TILE_SIZE):
+    result = []
 
+    result.append(mirrorVertical(tile, size))
+    result.append(rotateLeft(result[-1], size))
+    result.append(rotateLeft(result[-1], size))
+    result.append(rotateLeft(result[-1], size))
 
-def variants(pixels):
-    result = [pixels]
-    result.append(rotateLeft(result[-1]))
-    result.append(rotateLeft(result[-1]))
-    result.append(rotateLeft(result[-1]))
-
-    result.append(mirrorVertical(pixels))
-    result.append(rotateLeft(result[-1]))
-    result.append(rotateLeft(result[-1]))
-    result.append(rotateLeft(result[-1]))
-
-    result.append(mirrorHorizontal(pixels))
-    result.append(rotateLeft(result[-1]))
-    result.append(rotateLeft(result[-1]))
-    result.append(rotateLeft(result[-1]))
+    result.append(tile)
+    result.append(rotateLeft(result[-1], size))
+    result.append(rotateLeft(result[-1], size))
+    result.append(rotateLeft(result[-1], size))
 
     return result
 
 
-def render(tile):
-    for y in range(TILE_SIZE):
-        for x in range(TILE_SIZE):
-            sys.stdout.write('#' if (x, y) in tile else '.')
-        sys.stdout.write('\n')
+def verticalBorderMatches(leftTile, rightTile):
+    return all(((TILE_SIZE - 1, y) in leftTile) == ((0, y) in rightTile) for y in range(TILE_SIZE))
+
+
+def horizontalBorderMatches(topTile, bottomTile):
+    return all(((x, TILE_SIZE - 1) in topTile) == ((x, 0) in bottomTile) for x in range(TILE_SIZE))
+
+
+def arrange(image):
+    if len(image) == len(tiles):
+        return image
+
+    leftTile, aboveTile = None, None
+    if image:
+        if len(image) % imageWidth > 0:
+            leftTile = image[-1][1]
+        if len(image) // imageWidth > 0:
+            aboveTile = image[-imageWidth][1]
+
+    usedTiles = set(tileId for tileId, _ in image)
+
+    for tileId, variants in tiles.items():
+        if tileId in usedTiles:
+            continue
+
+        for variant in variants:
+            if leftTile and not verticalBorderMatches(leftTile, variant):
+                continue
+
+            if aboveTile and not horizontalBorderMatches(aboveTile, variant):
+                continue
+
+            result = arrange(image + [(tileId, variant)])
+            if result:
+                return result
+
+    return None
+
+
+def partOne():
+    return arrangement[0][0] * arrangement[imageWidth - 1][0] * arrangement[-imageWidth][0] * arrangement[-1][0]
+
+
+def partTwo():
+    border = set()
+    border.update({(x, 0) for x in range(TILE_SIZE)})
+    border.update({(x, TILE_SIZE - 1) for x in range(TILE_SIZE)})
+    border.update({(0, y) for y in range(TILE_SIZE)})
+    border.update({(TILE_SIZE - 1, y) for y in range(TILE_SIZE)})
+
+    composedImage = set()
+    for pos, (_, tile) in enumerate(arrangement):
+        xOffset = (pos % imageWidth) * (TILE_SIZE - 2)
+        yOffset = (pos // imageWidth) * (TILE_SIZE - 2)
+        transposedTile = {(x + xOffset - 1, y + yOffset - 1) for x, y in tile - border}
+        composedImage.update(transposedTile)
+
+    seaMonsterTemplate = set()
+    for y, line in enumerate(SEAMONSTER_TEMPLATE.split('\n')):
+        for x, ch in enumerate(line):
+            if ch == '#':
+                seaMonsterTemplate.add((x, y))
+
+    imageWidthPx = imageWidth * (TILE_SIZE - 2)
+
+    for variant in imageVariants(composedImage, imageWidthPx):
+        seaMonsterPixels = set()
+        for y in range(imageWidthPx):
+            for x in range(imageWidthPx):
+                seaMonster = {(a + x, b + y) for a, b in seaMonsterTemplate}
+                if seaMonster.issubset(variant):
+                    seaMonsterPixels.update(seaMonster)
+
+        if seaMonsterPixels:
+            return len(variant - seaMonsterPixels)
 
 
 if __name__ == '__main__':
-    upper_edge = {(x, 0) for x in range(TILE_SIZE)}
-    variantEdges = {}
-    for tileId, pixels in parse(sys.stdin):
-        edges = []
-        for variant in [pixels, mirrorVertical(pixels), mirrorHorizontal(pixels)]:
-            es = []
-            for _ in range(4):
-                es.append(variant & upper_edge)
-                variant = rotateLeft(variant)
-            edges.append(es)
-        variantEdges[tileId] = edges
-
-    for tileId, variants in variantEdges.items():
-        for otherTileId, otherVariants in variantEdges.items():
-            if otherTileId == tileId:
-                continue
-
-            for variant in variants:
-                if variant[0] in 
-
-            if variant[0] in
+    tiles = {tileId: imageVariants(tile) for tileId, tile in parse(sys.stdin)}
+    imageWidth = int(sqrt(len(tiles)))
+    arrangement = arrange([])
+    print("Part one: {}".format(partOne()))
+    print("Part two: {}".format(partTwo()))
